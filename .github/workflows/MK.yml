@@ -1,0 +1,60 @@
+name: CI
+
+on: [push, workflow_dispatch]
+
+jobs:
+
+  build:
+
+    runs-on: self-hosted
+
+    steps:
+
+    - name: Enable Remote Desktop
+
+      run: |
+
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+
+        Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P!!@ssw0rd!" -Force)
+
+    - name: Connect to Remote Desktop
+
+      uses: appleboy/remote-desktop-action@master
+
+      with:
+
+        ssh_host: ${{ secrets.SSH_HOST }}
+
+        ssh_user: ${{ secrets.SSH_USER }}
+
+        ssh_password: ${{ secrets.SSH_PASSWORD }}
+
+        rdp_port: 3389
+
+        rdp_username: runneradmin
+
+        rdp_password: P!!@ssw0rd!
+
+    - name: Download Spigot
+
+      run: |
+
+        Invoke-WebRequest "https://cdn.getbukkit.org/spigot/spigot-1.17.1.jar" -OutFile "spigot.jar"
+
+    - name: Install Java
+
+      uses: actions/setup-java@v2
+
+      with:
+
+        java-version: '16'
+
+    - name: Run Spigot
+
+      run: java -jar spigot.jar
+
